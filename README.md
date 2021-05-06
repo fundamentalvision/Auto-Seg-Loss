@@ -105,7 +105,7 @@ pip install -e .
 Please follow the [official guide](https://github.com/open-mmlab/mmsegmentation/blob/master/docs/dataset_prepare.md) of MMSegmentation to organize the datasets. It's highly recommended to symlink the dataset root to `Auto-Seg-Loss/data`. The recommended data structure is as follows:
 
 ```none
-mmsegmentation
+Auto-Seg-Loss
 ├── mmseg
 ├── ASL_search
 └── data
