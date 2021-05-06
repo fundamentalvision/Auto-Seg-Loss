@@ -1,0 +1,888 @@
+2020-09-23 04:56:23,101 - mmseg - INFO - Environment info:
+------------------------------------------------------------
+sys.platform: linux
+Python: 3.7.7 (default, May  7 2020, 21:25:33) [GCC 7.3.0]
+CUDA available: True
+CUDA_HOME: /mnt/cache/lihao2/LIB_LINKS/cuda/cuda-10.1:/mnt/cache/lihao2/LIB_LINKS/cuda/cuda-9.2
+GPU 0,1,2,3: Tesla V100-SXM2-32GB
+GCC: gcc (GCC) 7.3.0
+PyTorch: 1.5.0
+PyTorch compiling details: PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) Math Kernel Library Version 2020.0.2 Product Build 20200624 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v0.21.1 (Git Hash 7d2fd500bc78936d1d648ca713b901012f470dbc)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - NNPACK is enabled
+  - CPU capability usage: AVX2
+  - CUDA Runtime 10.1
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_61,code=sm_61;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_37,code=compute_37
+  - CuDNN 7.6.3
+  - Magma 2.5.2
+  - Build settings: BLAS=MKL, BUILD_TYPE=Release, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -fopenmp -DNDEBUG -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DUSE_INTERNAL_THREADPOOL_IMPL -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, USE_CUDA=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, USE_STATIC_DISPATCH=OFF, 
+
+TorchVision: 0.6.0a0+82fd1c8
+OpenCV: 4.4.0
+MMCV: 1.1.1
+MMSegmentation: 0.5.0+00f56eb
+MMCV Compiler: GCC 7.3
+MMCV CUDA Compiler: 10.1
+------------------------------------------------------------
+
+2020-09-23 04:56:23,102 - mmseg - INFO - Distributed training: True
+2020-09-23 04:56:23,366 - mmseg - INFO - Config:
+norm_cfg = dict(type='SyncBN', requires_grad=True)
+dist_params = dict(backend='nccl', port=18844)
+workflow = [('train', 1)]
+optimizer = dict(
+    type='SGD',
+    lr=0.02,
+    momentum=0.9,
+    weight_decay=0.0005,
+    paramwise_cfg=dict(custom_keys=dict(head=dict(lr_mult=10.0))))
+optimizer_config = dict()
+lr_config = dict(policy='poly', power=0.9, min_lr=0.0001, by_epoch=False)
+load_from = None
+resume_from = None
+total_iters = 10000
+checkpoint_config = dict(by_epoch=False, interval=2000)
+evaluation = dict(interval=10000, metric='mIoU')
+data = dict(
+    samples_per_gpu=8,
+    workers_per_gpu=4,
+    train=dict(
+        type='PascalVOCDataset',
+        data_root='/mnt/cache/lihao2/mmsegmentation/data/VOCdevkit/VOC2012',
+        img_dir='JPEGImages',
+        ann_dir=['SegmentationClass', 'SegmentationClassAug'],
+        split=[
+            'ImageSets/Segmentation/train.txt',
+            'ImageSets/Segmentation/aug.txt'
+        ],
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(type='LoadAnnotations'),
+            dict(type='Resize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
+            dict(type='RandomCrop', crop_size=(512, 512), cat_max_ratio=0.75),
+            dict(type='RandomFlip', flip_ratio=0.5),
+            dict(type='PhotoMetricDistortion'),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='Pad', size=(512, 512), pad_val=0, seg_pad_val=255),
+            dict(type='DefaultFormatBundle'),
+            dict(type='Collect', keys=['img', 'gt_semantic_seg'])
+        ]),
+    val=dict(
+        type='PascalVOCDataset',
+        data_root='/mnt/cache/lihao2/mmsegmentation/data/VOCdevkit/VOC2012',
+        img_dir='JPEGImages',
+        ann_dir='SegmentationClass',
+        split='ImageSets/Segmentation/val.txt',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='MultiScaleFlipAug',
+                img_scale=(2048, 512),
+                flip=False,
+                transforms=[
+                    dict(type='Resize', keep_ratio=True),
+                    dict(type='RandomFlip'),
+                    dict(
+                        type='Normalize',
+                        mean=[123.675, 116.28, 103.53],
+                        std=[58.395, 57.12, 57.375],
+                        to_rgb=True),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]),
+    test=dict(
+        type='PascalVOCDataset',
+        data_root='/mnt/cache/lihao2/mmsegmentation/data/VOCdevkit/VOC2012',
+        img_dir='JPEGImages',
+        ann_dir='SegmentationClass',
+        split='ImageSets/Segmentation/val.txt',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='MultiScaleFlipAug',
+                img_scale=(2048, 512),
+                flip=False,
+                transforms=[
+                    dict(type='Resize', keep_ratio=True),
+                    dict(type='RandomFlip'),
+                    dict(
+                        type='Normalize',
+                        mean=[123.675, 116.28, 103.53],
+                        std=[58.395, 57.12, 57.375],
+                        to_rgb=True),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]))
+model = dict(
+    type='EncoderDecoder',
+    pretrained='open-mmlab://resnet101_v1c',
+    backbone=dict(
+        type='ResNetV1c',
+        depth=101,
+        num_stages=4,
+        out_indices=(0, 1, 2, 3),
+        dilations=(1, 1, 2, 4),
+        strides=(1, 2, 1, 1),
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        norm_eval=False,
+        style='pytorch',
+        contract_dilation=True),
+    decode_head=dict(
+        type='DepthwiseSeparableASPPHead',
+        in_channels=2048,
+        in_index=3,
+        channels=512,
+        dilations=(1, 12, 24, 36),
+        c1_in_channels=256,
+        c1_channels=48,
+        dropout_ratio=0.1,
+        num_classes=21,
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        align_corners=False,
+        loss_decode=dict(
+            type='Metric_Macc_Bezier_All_2Ctrl_Loss',
+            num_class=21,
+            theta=[
+                0.021453928, 0.73905742, 0.41163361, 0.79865617, 0.91986191,
+                0.95041156
+            ],
+            loss_weight=1.0)),
+    auxiliary_head=dict(
+        type='FCNHead',
+        in_channels=1024,
+        in_index=2,
+        channels=256,
+        num_convs=1,
+        concat_input=False,
+        dropout_ratio=0.1,
+        num_classes=21,
+        norm_cfg=dict(type='SyncBN', requires_grad=True),
+        align_corners=False,
+        loss_decode=dict(
+            type='Metric_Macc_Bezier_All_2Ctrl_Loss',
+            num_class=21,
+            theta=[
+                0.021453928, 0.73905742, 0.41163361, 0.79865617, 0.91986191,
+                0.95041156
+            ],
+            loss_weight=0.4)))
+train_cfg = dict()
+test_cfg = dict(mode='whole')
+log_config = dict(
+    interval=50, hooks=[dict(type='TextLoggerHook', by_epoch=False)])
+log_level = 'INFO'
+cudnn_benchmark = True
+work_dir = '/mnt/cache/lihao2/mmsegmentation/exp/retrain_voc/macc/macc_bezier_10k_all/'
+gpu_ids = range(0, 1)
+
+2020-09-23 04:56:23,366 - mmseg - INFO - Set random seed to 1, deterministic: False
+2020-09-23 04:56:30,069 - mmseg - WARNING - The model and loaded state dict do not match exactly
+
+unexpected key in source state_dict: fc.weight, fc.bias
+
+2020-09-23 04:56:30,070 - mmseg - INFO - EncoderDecoder(
+  (backbone): ResNetV1c(
+    (stem): Sequential(
+      (0): Conv2d(3, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+      (1): SyncBatchNorm(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): ReLU(inplace=True)
+      (3): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (4): SyncBatchNorm(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (5): ReLU(inplace=True)
+      (6): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (7): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (8): ReLU(inplace=True)
+    )
+    (maxpool): MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
+    (layer1): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(64, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(256, 64, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(64, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer2): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(256, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(256, 512, kernel_size=(1, 1), stride=(2, 2), bias=False)
+          (1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (3): Bottleneck(
+        (conv1): Conv2d(512, 128, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(128, 128, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(128, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer3): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(512, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(512, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (1): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (3): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (4): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (5): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (6): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (7): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (8): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (9): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (10): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (11): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (12): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (13): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (14): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (15): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (16): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (17): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (18): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (19): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (20): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (21): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (22): Bottleneck(
+        (conv1): Conv2d(1024, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(256, 256, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(256, 1024, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(1024, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+    (layer4): ResLayer(
+      (0): Bottleneck(
+        (conv1): Conv2d(1024, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(2, 2), dilation=(2, 2), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+        (downsample): Sequential(
+          (0): Conv2d(1024, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (1): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): Bottleneck(
+        (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(4, 4), dilation=(4, 4), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+      (2): Bottleneck(
+        (conv1): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn1): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(4, 4), dilation=(4, 4), bias=False)
+        (bn2): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv3): Conv2d(512, 2048, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn3): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): ReLU(inplace=True)
+      )
+    )
+  )
+  (decode_head): DepthwiseSeparableASPPHead(
+    input_transform=None, ignore_index=255, align_corners=False
+    (loss_decode): Metric_Macc_Bezier_All_2Ctrl_Loss(
+      (input_softmax): Softmax(dim=1)
+      (sigmoid): Sigmoid()
+    )
+    (conv_seg): Conv2d(512, 21, kernel_size=(1, 1), stride=(1, 1))
+    (dropout): Dropout2d(p=0.1, inplace=False)
+    (image_pool): Sequential(
+      (0): AdaptiveAvgPool2d(output_size=1)
+      (1): ConvModule(
+        (conv): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activate): ReLU(inplace=True)
+      )
+    )
+    (aspp_modules): DepthwiseSeparableASPPModule(
+      (0): ConvModule(
+        (conv): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+        (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activate): ReLU(inplace=True)
+      )
+      (1): DepthwiseSeparableConvModule(
+        (depthwise_conv): ConvModule(
+          (conv): Conv2d(2048, 2048, kernel_size=(3, 3), stride=(1, 1), padding=(12, 12), dilation=(12, 12), groups=2048, bias=False)
+          (bn): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+        (pointwise_conv): ConvModule(
+          (conv): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+      )
+      (2): DepthwiseSeparableConvModule(
+        (depthwise_conv): ConvModule(
+          (conv): Conv2d(2048, 2048, kernel_size=(3, 3), stride=(1, 1), padding=(24, 24), dilation=(24, 24), groups=2048, bias=False)
+          (bn): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+        (pointwise_conv): ConvModule(
+          (conv): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+      )
+      (3): DepthwiseSeparableConvModule(
+        (depthwise_conv): ConvModule(
+          (conv): Conv2d(2048, 2048, kernel_size=(3, 3), stride=(1, 1), padding=(36, 36), dilation=(36, 36), groups=2048, bias=False)
+          (bn): SyncBatchNorm(2048, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+        (pointwise_conv): ConvModule(
+          (conv): Conv2d(2048, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+      )
+    )
+    (bottleneck): ConvModule(
+      (conv): Conv2d(2560, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+      (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (activate): ReLU(inplace=True)
+    )
+    (c1_bottleneck): ConvModule(
+      (conv): Conv2d(256, 48, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (bn): SyncBatchNorm(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (activate): ReLU(inplace=True)
+    )
+    (sep_bottleneck): Sequential(
+      (0): DepthwiseSeparableConvModule(
+        (depthwise_conv): ConvModule(
+          (conv): Conv2d(560, 560, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=560, bias=False)
+          (bn): SyncBatchNorm(560, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+        (pointwise_conv): ConvModule(
+          (conv): Conv2d(560, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+      )
+      (1): DepthwiseSeparableConvModule(
+        (depthwise_conv): ConvModule(
+          (conv): Conv2d(512, 512, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=512, bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+        (pointwise_conv): ConvModule(
+          (conv): Conv2d(512, 512, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(512, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (activate): ReLU(inplace=True)
+        )
+      )
+    )
+  )
+  (auxiliary_head): FCNHead(
+    input_transform=None, ignore_index=255, align_corners=False
+    (loss_decode): Metric_Macc_Bezier_All_2Ctrl_Loss(
+      (input_softmax): Softmax(dim=1)
+      (sigmoid): Sigmoid()
+    )
+    (conv_seg): Conv2d(256, 21, kernel_size=(1, 1), stride=(1, 1))
+    (dropout): Dropout2d(p=0.1, inplace=False)
+    (convs): Sequential(
+      (0): ConvModule(
+        (conv): Conv2d(1024, 256, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), bias=False)
+        (bn): SyncBatchNorm(256, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (activate): ReLU(inplace=True)
+      )
+    )
+  )
+)
+2020-09-23 04:56:30,086 - mmseg - INFO - Loaded 1464 images
+2020-09-23 04:56:30,177 - mmseg - INFO - Loaded 9118 images
+2020-09-23 04:56:31,053 - mmseg - INFO - Loaded 1449 images
+2020-09-23 04:56:31,057 - mmseg - INFO - Start running, host: lihao2@SH-IDC1-10-198-6-124, work_dir: /mnt/cache/lihao2/mmsegmentation/exp/retrain_voc/macc/macc_bezier_10k_all
+2020-09-23 04:56:31,057 - mmseg - INFO - workflow: [('train', 1)], max: 10000 iters
+2020-09-23 04:58:07,992 - mmseg - INFO - Iter [50/10000]	lr: 1.991e-02, eta: 4:33:45, time: 1.651, data_time: 0.008, memory: 29522, decode.loss_seg: 0.7954, decode.acc_seg: 46.8116, aux.loss_seg: 0.3312, aux.acc_seg: 35.9177, loss: 1.1266
+2020-09-23 04:59:22,902 - mmseg - INFO - Iter [100/10000]	lr: 1.982e-02, eta: 4:19:43, time: 1.497, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6861, decode.acc_seg: 60.5396, aux.loss_seg: 0.3189, aux.acc_seg: 55.7316, loss: 1.0050
+2020-09-23 05:00:44,584 - mmseg - INFO - Iter [150/10000]	lr: 1.973e-02, eta: 4:21:40, time: 1.634, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6601, decode.acc_seg: 63.4033, aux.loss_seg: 0.2985, aux.acc_seg: 61.5050, loss: 0.9587
+2020-09-23 05:02:03,019 - mmseg - INFO - Iter [200/10000]	lr: 1.964e-02, eta: 4:19:18, time: 1.569, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6497, decode.acc_seg: 64.2259, aux.loss_seg: 0.2837, aux.acc_seg: 62.8434, loss: 0.9334
+2020-09-23 05:03:20,241 - mmseg - INFO - Iter [250/10000]	lr: 1.955e-02, eta: 4:16:35, time: 1.544, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6544, decode.acc_seg: 65.2127, aux.loss_seg: 0.2812, aux.acc_seg: 63.1927, loss: 0.9356
+2020-09-23 05:04:35,769 - mmseg - INFO - Iter [300/10000]	lr: 1.946e-02, eta: 4:13:25, time: 1.510, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6480, decode.acc_seg: 66.3325, aux.loss_seg: 0.2760, aux.acc_seg: 63.9973, loss: 0.9240
+2020-09-23 05:06:15,757 - mmseg - INFO - Iter [350/10000]	lr: 1.937e-02, eta: 4:22:02, time: 2.000, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6543, decode.acc_seg: 65.9714, aux.loss_seg: 0.2781, aux.acc_seg: 62.6546, loss: 0.9324
+2020-09-23 05:07:33,470 - mmseg - INFO - Iter [400/10000]	lr: 1.928e-02, eta: 4:19:10, time: 1.554, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6475, decode.acc_seg: 68.1384, aux.loss_seg: 0.2755, aux.acc_seg: 64.2879, loss: 0.9230
+2020-09-23 05:08:50,222 - mmseg - INFO - Iter [450/10000]	lr: 1.919e-02, eta: 4:16:20, time: 1.535, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6382, decode.acc_seg: 69.2207, aux.loss_seg: 0.2721, aux.acc_seg: 64.7748, loss: 0.9103
+2020-09-23 05:10:07,182 - mmseg - INFO - Iter [500/10000]	lr: 1.910e-02, eta: 4:13:51, time: 1.539, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6523, decode.acc_seg: 68.5850, aux.loss_seg: 0.2757, aux.acc_seg: 64.1852, loss: 0.9279
+2020-09-23 05:11:23,131 - mmseg - INFO - Iter [550/10000]	lr: 1.901e-02, eta: 4:11:19, time: 1.519, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6434, decode.acc_seg: 68.8404, aux.loss_seg: 0.2726, aux.acc_seg: 64.5735, loss: 0.9160
+2020-09-23 05:12:40,939 - mmseg - INFO - Iter [600/10000]	lr: 1.892e-02, eta: 4:09:28, time: 1.556, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6450, decode.acc_seg: 68.4077, aux.loss_seg: 0.2735, aux.acc_seg: 63.5341, loss: 0.9186
+2020-09-23 05:13:55,284 - mmseg - INFO - Iter [650/10000]	lr: 1.883e-02, eta: 4:06:52, time: 1.487, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6487, decode.acc_seg: 67.9172, aux.loss_seg: 0.2735, aux.acc_seg: 63.7931, loss: 0.9222
+2020-09-23 05:15:33,502 - mmseg - INFO - Iter [700/10000]	lr: 1.874e-02, eta: 4:09:46, time: 1.965, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6440, decode.acc_seg: 70.4796, aux.loss_seg: 0.2727, aux.acc_seg: 65.4402, loss: 0.9167
+2020-09-23 05:16:48,733 - mmseg - INFO - Iter [750/10000]	lr: 1.865e-02, eta: 4:07:19, time: 1.505, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6344, decode.acc_seg: 70.0695, aux.loss_seg: 0.2693, aux.acc_seg: 65.3985, loss: 0.9037
+2020-09-23 05:18:06,268 - mmseg - INFO - Iter [800/10000]	lr: 1.856e-02, eta: 4:05:28, time: 1.550, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6366, decode.acc_seg: 70.1322, aux.loss_seg: 0.2700, aux.acc_seg: 64.4682, loss: 0.9066
+2020-09-23 05:19:23,014 - mmseg - INFO - Iter [850/10000]	lr: 1.847e-02, eta: 4:03:32, time: 1.535, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6405, decode.acc_seg: 69.2656, aux.loss_seg: 0.2706, aux.acc_seg: 64.6054, loss: 0.9111
+2020-09-23 05:20:36,367 - mmseg - INFO - Iter [900/10000]	lr: 1.838e-02, eta: 4:01:07, time: 1.468, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6439, decode.acc_seg: 70.2642, aux.loss_seg: 0.2724, aux.acc_seg: 65.1386, loss: 0.9163
+2020-09-23 05:21:55,510 - mmseg - INFO - Iter [950/10000]	lr: 1.829e-02, eta: 3:59:44, time: 1.582, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6390, decode.acc_seg: 70.4561, aux.loss_seg: 0.2694, aux.acc_seg: 65.4874, loss: 0.9085
+2020-09-23 05:23:34,507 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 05:23:34,529 - mmseg - INFO - Iter [1000/10000]	lr: 1.820e-02, eta: 4:01:21, time: 1.981, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6454, decode.acc_seg: 69.4269, aux.loss_seg: 0.2720, aux.acc_seg: 64.7495, loss: 0.9175
+2020-09-23 05:24:49,829 - mmseg - INFO - Iter [1050/10000]	lr: 1.811e-02, eta: 3:59:16, time: 1.506, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6415, decode.acc_seg: 70.8454, aux.loss_seg: 0.2714, aux.acc_seg: 65.7543, loss: 0.9129
+2020-09-23 05:26:03,870 - mmseg - INFO - Iter [1100/10000]	lr: 1.802e-02, eta: 3:57:06, time: 1.481, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6414, decode.acc_seg: 71.1317, aux.loss_seg: 0.2714, aux.acc_seg: 65.6581, loss: 0.9128
+2020-09-23 05:27:20,612 - mmseg - INFO - Iter [1150/10000]	lr: 1.793e-02, eta: 3:55:22, time: 1.535, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6414, decode.acc_seg: 71.8394, aux.loss_seg: 0.2709, aux.acc_seg: 66.7561, loss: 0.9124
+2020-09-23 05:28:37,048 - mmseg - INFO - Iter [1200/10000]	lr: 1.784e-02, eta: 3:53:37, time: 1.529, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6367, decode.acc_seg: 72.1213, aux.loss_seg: 0.2697, aux.acc_seg: 66.1330, loss: 0.9065
+2020-09-23 05:29:52,878 - mmseg - INFO - Iter [1250/10000]	lr: 1.775e-02, eta: 3:51:51, time: 1.517, data_time: 0.015, memory: 29522, decode.loss_seg: 0.6390, decode.acc_seg: 70.1211, aux.loss_seg: 0.2698, aux.acc_seg: 65.0677, loss: 0.9088
+2020-09-23 05:31:07,796 - mmseg - INFO - Iter [1300/10000]	lr: 1.766e-02, eta: 3:50:01, time: 1.498, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6325, decode.acc_seg: 70.9911, aux.loss_seg: 0.2665, aux.acc_seg: 66.1090, loss: 0.8990
+2020-09-23 05:32:48,349 - mmseg - INFO - Iter [1350/10000]	lr: 1.757e-02, eta: 3:50:58, time: 2.012, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6263, decode.acc_seg: 71.9419, aux.loss_seg: 0.2651, aux.acc_seg: 66.2409, loss: 0.8914
+2020-09-23 05:34:05,057 - mmseg - INFO - Iter [1400/10000]	lr: 1.748e-02, eta: 3:49:17, time: 1.534, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6249, decode.acc_seg: 72.6645, aux.loss_seg: 0.2650, aux.acc_seg: 66.8584, loss: 0.8898
+2020-09-23 05:35:20,138 - mmseg - INFO - Iter [1450/10000]	lr: 1.738e-02, eta: 3:47:28, time: 1.501, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6293, decode.acc_seg: 72.7701, aux.loss_seg: 0.2668, aux.acc_seg: 66.8793, loss: 0.8961
+2020-09-23 05:36:36,098 - mmseg - INFO - Iter [1500/10000]	lr: 1.729e-02, eta: 3:45:46, time: 1.519, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6260, decode.acc_seg: 71.6963, aux.loss_seg: 0.2649, aux.acc_seg: 66.0133, loss: 0.8910
+2020-09-23 05:37:50,464 - mmseg - INFO - Iter [1550/10000]	lr: 1.720e-02, eta: 3:43:57, time: 1.487, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6298, decode.acc_seg: 72.0284, aux.loss_seg: 0.2658, aux.acc_seg: 66.6093, loss: 0.8956
+2020-09-23 05:39:05,345 - mmseg - INFO - Iter [1600/10000]	lr: 1.711e-02, eta: 3:42:13, time: 1.497, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6384, decode.acc_seg: 70.8969, aux.loss_seg: 0.2694, aux.acc_seg: 65.5721, loss: 0.9077
+2020-09-23 05:40:23,013 - mmseg - INFO - Iter [1650/10000]	lr: 1.702e-02, eta: 3:40:44, time: 1.549, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6383, decode.acc_seg: 71.8927, aux.loss_seg: 0.2679, aux.acc_seg: 66.8741, loss: 0.9062
+2020-09-23 05:41:58,635 - mmseg - INFO - Iter [1700/10000]	lr: 1.693e-02, eta: 3:40:46, time: 1.917, data_time: 0.018, memory: 29522, decode.loss_seg: 0.6320, decode.acc_seg: 71.7014, aux.loss_seg: 0.2662, aux.acc_seg: 66.7860, loss: 0.8982
+2020-09-23 05:43:14,575 - mmseg - INFO - Iter [1750/10000]	lr: 1.684e-02, eta: 3:39:08, time: 1.519, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6347, decode.acc_seg: 72.1608, aux.loss_seg: 0.2670, aux.acc_seg: 66.5881, loss: 0.9017
+2020-09-23 05:44:31,757 - mmseg - INFO - Iter [1800/10000]	lr: 1.675e-02, eta: 3:37:37, time: 1.544, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6454, decode.acc_seg: 72.3531, aux.loss_seg: 0.2724, aux.acc_seg: 67.2588, loss: 0.9178
+2020-09-23 05:45:50,339 - mmseg - INFO - Iter [1850/10000]	lr: 1.666e-02, eta: 3:36:12, time: 1.572, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6288, decode.acc_seg: 71.8758, aux.loss_seg: 0.2655, aux.acc_seg: 66.4539, loss: 0.8943
+2020-09-23 05:47:07,847 - mmseg - INFO - Iter [1900/10000]	lr: 1.656e-02, eta: 3:34:44, time: 1.550, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6373, decode.acc_seg: 71.6108, aux.loss_seg: 0.2683, aux.acc_seg: 66.6153, loss: 0.9055
+2020-09-23 05:48:24,193 - mmseg - INFO - Iter [1950/10000]	lr: 1.647e-02, eta: 3:33:11, time: 1.524, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6325, decode.acc_seg: 70.6752, aux.loss_seg: 0.2668, aux.acc_seg: 65.9020, loss: 0.8993
+2020-09-23 05:50:07,605 - mmseg - INFO - Saving checkpoint at 2000 iterations
+2020-09-23 05:50:08,353 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 05:50:08,353 - mmseg - INFO - Iter [2000/10000]	lr: 1.638e-02, eta: 3:33:31, time: 2.087, data_time: 0.015, memory: 29522, decode.loss_seg: 0.6340, decode.acc_seg: 72.1832, aux.loss_seg: 0.2668, aux.acc_seg: 66.7281, loss: 0.9008
+2020-09-23 05:51:24,403 - mmseg - INFO - Iter [2050/10000]	lr: 1.629e-02, eta: 3:31:54, time: 1.517, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6299, decode.acc_seg: 73.0773, aux.loss_seg: 0.2655, aux.acc_seg: 68.0377, loss: 0.8954
+2020-09-23 05:52:41,625 - mmseg - INFO - Iter [2100/10000]	lr: 1.620e-02, eta: 3:30:25, time: 1.548, data_time: 0.016, memory: 29522, decode.loss_seg: 0.6274, decode.acc_seg: 73.1760, aux.loss_seg: 0.2647, aux.acc_seg: 67.9251, loss: 0.8920
+2020-09-23 05:53:56,665 - mmseg - INFO - Iter [2150/10000]	lr: 1.611e-02, eta: 3:28:47, time: 1.501, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6299, decode.acc_seg: 71.6868, aux.loss_seg: 0.2658, aux.acc_seg: 66.2487, loss: 0.8957
+2020-09-23 05:55:12,360 - mmseg - INFO - Iter [2200/10000]	lr: 1.601e-02, eta: 3:27:13, time: 1.514, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6302, decode.acc_seg: 72.6266, aux.loss_seg: 0.2661, aux.acc_seg: 66.9817, loss: 0.8963
+2020-09-23 05:56:28,691 - mmseg - INFO - Iter [2250/10000]	lr: 1.592e-02, eta: 3:25:41, time: 1.526, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6323, decode.acc_seg: 73.4567, aux.loss_seg: 0.2674, aux.acc_seg: 67.3239, loss: 0.8997
+2020-09-23 05:57:45,459 - mmseg - INFO - Iter [2300/10000]	lr: 1.583e-02, eta: 3:24:12, time: 1.535, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6341, decode.acc_seg: 72.5260, aux.loss_seg: 0.2670, aux.acc_seg: 67.0444, loss: 0.9011
+2020-09-23 05:59:23,545 - mmseg - INFO - Iter [2350/10000]	lr: 1.574e-02, eta: 3:23:53, time: 1.962, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6249, decode.acc_seg: 73.5446, aux.loss_seg: 0.2641, aux.acc_seg: 67.4601, loss: 0.8890
+2020-09-23 06:00:41,693 - mmseg - INFO - Iter [2400/10000]	lr: 1.565e-02, eta: 3:22:27, time: 1.564, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6271, decode.acc_seg: 72.4252, aux.loss_seg: 0.2644, aux.acc_seg: 67.1271, loss: 0.8916
+2020-09-23 06:01:59,848 - mmseg - INFO - Iter [2450/10000]	lr: 1.555e-02, eta: 3:21:02, time: 1.562, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6282, decode.acc_seg: 73.8529, aux.loss_seg: 0.2649, aux.acc_seg: 68.6200, loss: 0.8931
+2020-09-23 06:03:17,986 - mmseg - INFO - Iter [2500/10000]	lr: 1.546e-02, eta: 3:19:37, time: 1.563, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6370, decode.acc_seg: 73.3984, aux.loss_seg: 0.2684, aux.acc_seg: 67.8413, loss: 0.9054
+2020-09-23 06:04:35,703 - mmseg - INFO - Iter [2550/10000]	lr: 1.537e-02, eta: 3:18:11, time: 1.554, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6254, decode.acc_seg: 73.1260, aux.loss_seg: 0.2641, aux.acc_seg: 67.6180, loss: 0.8895
+2020-09-23 06:05:51,183 - mmseg - INFO - Iter [2600/10000]	lr: 1.528e-02, eta: 3:16:38, time: 1.510, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6314, decode.acc_seg: 73.6429, aux.loss_seg: 0.2664, aux.acc_seg: 67.9897, loss: 0.8978
+2020-09-23 06:07:30,673 - mmseg - INFO - Iter [2650/10000]	lr: 1.519e-02, eta: 3:16:14, time: 1.990, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6279, decode.acc_seg: 73.3069, aux.loss_seg: 0.2655, aux.acc_seg: 67.2645, loss: 0.8934
+2020-09-23 06:08:46,177 - mmseg - INFO - Iter [2700/10000]	lr: 1.509e-02, eta: 3:14:41, time: 1.510, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6294, decode.acc_seg: 73.0905, aux.loss_seg: 0.2648, aux.acc_seg: 67.7479, loss: 0.8942
+2020-09-23 06:10:01,044 - mmseg - INFO - Iter [2750/10000]	lr: 1.500e-02, eta: 3:13:08, time: 1.497, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6251, decode.acc_seg: 73.6012, aux.loss_seg: 0.2635, aux.acc_seg: 68.0007, loss: 0.8886
+2020-09-23 06:11:17,417 - mmseg - INFO - Iter [2800/10000]	lr: 1.491e-02, eta: 3:11:38, time: 1.527, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6272, decode.acc_seg: 74.1316, aux.loss_seg: 0.2649, aux.acc_seg: 68.5491, loss: 0.8921
+2020-09-23 06:12:32,774 - mmseg - INFO - Iter [2850/10000]	lr: 1.482e-02, eta: 3:10:07, time: 1.507, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6347, decode.acc_seg: 73.5463, aux.loss_seg: 0.2672, aux.acc_seg: 67.7359, loss: 0.9019
+2020-09-23 06:13:51,403 - mmseg - INFO - Iter [2900/10000]	lr: 1.472e-02, eta: 3:08:45, time: 1.572, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6239, decode.acc_seg: 72.8295, aux.loss_seg: 0.2626, aux.acc_seg: 67.5297, loss: 0.8864
+2020-09-23 06:15:08,364 - mmseg - INFO - Iter [2950/10000]	lr: 1.463e-02, eta: 3:07:18, time: 1.539, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6297, decode.acc_seg: 73.2520, aux.loss_seg: 0.2647, aux.acc_seg: 67.5292, loss: 0.8944
+2020-09-23 06:16:46,869 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 06:16:46,922 - mmseg - INFO - Iter [3000/10000]	lr: 1.454e-02, eta: 3:06:42, time: 1.971, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6282, decode.acc_seg: 73.3474, aux.loss_seg: 0.2644, aux.acc_seg: 68.5048, loss: 0.8925
+2020-09-23 06:18:01,685 - mmseg - INFO - Iter [3050/10000]	lr: 1.444e-02, eta: 3:05:11, time: 1.496, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6257, decode.acc_seg: 74.5775, aux.loss_seg: 0.2645, aux.acc_seg: 68.6657, loss: 0.8902
+2020-09-23 06:19:19,538 - mmseg - INFO - Iter [3100/10000]	lr: 1.435e-02, eta: 3:03:46, time: 1.556, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6259, decode.acc_seg: 73.4639, aux.loss_seg: 0.2635, aux.acc_seg: 68.2791, loss: 0.8894
+2020-09-23 06:20:35,681 - mmseg - INFO - Iter [3150/10000]	lr: 1.426e-02, eta: 3:02:18, time: 1.523, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6314, decode.acc_seg: 73.3343, aux.loss_seg: 0.2658, aux.acc_seg: 67.9739, loss: 0.8971
+2020-09-23 06:21:55,176 - mmseg - INFO - Iter [3200/10000]	lr: 1.417e-02, eta: 3:00:57, time: 1.590, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6235, decode.acc_seg: 73.8030, aux.loss_seg: 0.2625, aux.acc_seg: 68.0727, loss: 0.8860
+2020-09-23 06:23:10,081 - mmseg - INFO - Iter [3250/10000]	lr: 1.407e-02, eta: 2:59:27, time: 1.498, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6315, decode.acc_seg: 73.9345, aux.loss_seg: 0.2660, aux.acc_seg: 68.5929, loss: 0.8975
+2020-09-23 06:24:25,136 - mmseg - INFO - Iter [3300/10000]	lr: 1.398e-02, eta: 2:57:58, time: 1.501, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6346, decode.acc_seg: 73.3020, aux.loss_seg: 0.2665, aux.acc_seg: 68.0653, loss: 0.9011
+2020-09-23 06:26:05,021 - mmseg - INFO - Iter [3350/10000]	lr: 1.389e-02, eta: 2:57:18, time: 1.998, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6307, decode.acc_seg: 74.1792, aux.loss_seg: 0.2659, aux.acc_seg: 68.2427, loss: 0.8966
+2020-09-23 06:27:20,026 - mmseg - INFO - Iter [3400/10000]	lr: 1.379e-02, eta: 2:55:49, time: 1.500, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6271, decode.acc_seg: 75.2177, aux.loss_seg: 0.2642, aux.acc_seg: 68.9506, loss: 0.8913
+2020-09-23 06:28:35,237 - mmseg - INFO - Iter [3450/10000]	lr: 1.370e-02, eta: 2:54:20, time: 1.504, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6193, decode.acc_seg: 75.3655, aux.loss_seg: 0.2615, aux.acc_seg: 69.4093, loss: 0.8808
+2020-09-23 06:29:51,452 - mmseg - INFO - Iter [3500/10000]	lr: 1.361e-02, eta: 2:52:53, time: 1.524, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6374, decode.acc_seg: 74.4000, aux.loss_seg: 0.2682, aux.acc_seg: 68.5943, loss: 0.9057
+2020-09-23 06:31:06,827 - mmseg - INFO - Iter [3550/10000]	lr: 1.351e-02, eta: 2:51:25, time: 1.507, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6227, decode.acc_seg: 75.5390, aux.loss_seg: 0.2626, aux.acc_seg: 68.9723, loss: 0.8853
+2020-09-23 06:32:22,666 - mmseg - INFO - Iter [3600/10000]	lr: 1.342e-02, eta: 2:49:59, time: 1.517, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6295, decode.acc_seg: 74.4143, aux.loss_seg: 0.2645, aux.acc_seg: 68.6886, loss: 0.8940
+2020-09-23 06:34:03,955 - mmseg - INFO - Iter [3650/10000]	lr: 1.333e-02, eta: 2:49:17, time: 2.026, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6277, decode.acc_seg: 74.2285, aux.loss_seg: 0.2643, aux.acc_seg: 68.5302, loss: 0.8920
+2020-09-23 06:35:19,778 - mmseg - INFO - Iter [3700/10000]	lr: 1.323e-02, eta: 2:47:50, time: 1.516, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6284, decode.acc_seg: 74.6666, aux.loss_seg: 0.2647, aux.acc_seg: 68.5559, loss: 0.8932
+2020-09-23 06:36:34,958 - mmseg - INFO - Iter [3750/10000]	lr: 1.314e-02, eta: 2:46:22, time: 1.504, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6284, decode.acc_seg: 74.9663, aux.loss_seg: 0.2646, aux.acc_seg: 69.0234, loss: 0.8931
+2020-09-23 06:37:51,424 - mmseg - INFO - Iter [3800/10000]	lr: 1.304e-02, eta: 2:44:56, time: 1.529, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6302, decode.acc_seg: 74.7911, aux.loss_seg: 0.2652, aux.acc_seg: 68.7697, loss: 0.8954
+2020-09-23 06:39:10,959 - mmseg - INFO - Iter [3850/10000]	lr: 1.295e-02, eta: 2:43:36, time: 1.591, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6312, decode.acc_seg: 74.2659, aux.loss_seg: 0.2653, aux.acc_seg: 68.3245, loss: 0.8965
+2020-09-23 06:40:26,566 - mmseg - INFO - Iter [3900/10000]	lr: 1.286e-02, eta: 2:42:10, time: 1.512, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6281, decode.acc_seg: 75.1198, aux.loss_seg: 0.2642, aux.acc_seg: 69.2000, loss: 0.8923
+2020-09-23 06:41:41,355 - mmseg - INFO - Iter [3950/10000]	lr: 1.276e-02, eta: 2:40:42, time: 1.495, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6289, decode.acc_seg: 73.9532, aux.loss_seg: 0.2644, aux.acc_seg: 68.6513, loss: 0.8933
+2020-09-23 06:43:20,612 - mmseg - INFO - Saving checkpoint at 4000 iterations
+2020-09-23 06:43:21,366 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 06:43:21,366 - mmseg - INFO - Iter [4000/10000]	lr: 1.267e-02, eta: 2:39:53, time: 2.001, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6154, decode.acc_seg: 75.7448, aux.loss_seg: 0.2593, aux.acc_seg: 70.0621, loss: 0.8747
+2020-09-23 06:44:38,006 - mmseg - INFO - Iter [4050/10000]	lr: 1.257e-02, eta: 2:38:28, time: 1.532, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6196, decode.acc_seg: 74.7639, aux.loss_seg: 0.2607, aux.acc_seg: 69.0989, loss: 0.8803
+2020-09-23 06:45:52,757 - mmseg - INFO - Iter [4100/10000]	lr: 1.248e-02, eta: 2:37:01, time: 1.495, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6231, decode.acc_seg: 75.5890, aux.loss_seg: 0.2623, aux.acc_seg: 69.3813, loss: 0.8854
+2020-09-23 06:47:07,393 - mmseg - INFO - Iter [4150/10000]	lr: 1.238e-02, eta: 2:35:34, time: 1.493, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6292, decode.acc_seg: 74.3466, aux.loss_seg: 0.2645, aux.acc_seg: 69.1421, loss: 0.8937
+2020-09-23 06:48:24,486 - mmseg - INFO - Iter [4200/10000]	lr: 1.229e-02, eta: 2:34:10, time: 1.542, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6252, decode.acc_seg: 76.0490, aux.loss_seg: 0.2626, aux.acc_seg: 69.7159, loss: 0.8877
+2020-09-23 06:49:39,139 - mmseg - INFO - Iter [4250/10000]	lr: 1.220e-02, eta: 2:32:43, time: 1.490, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6244, decode.acc_seg: 75.7990, aux.loss_seg: 0.2631, aux.acc_seg: 69.8989, loss: 0.8875
+2020-09-23 06:51:19,955 - mmseg - INFO - Iter [4300/10000]	lr: 1.210e-02, eta: 2:31:52, time: 2.019, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6253, decode.acc_seg: 75.1115, aux.loss_seg: 0.2637, aux.acc_seg: 68.3621, loss: 0.8890
+2020-09-23 06:52:36,475 - mmseg - INFO - Iter [4350/10000]	lr: 1.201e-02, eta: 2:30:28, time: 1.530, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6259, decode.acc_seg: 76.0752, aux.loss_seg: 0.2630, aux.acc_seg: 70.1980, loss: 0.8889
+2020-09-23 06:53:53,259 - mmseg - INFO - Iter [4400/10000]	lr: 1.191e-02, eta: 2:29:04, time: 1.535, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6199, decode.acc_seg: 75.2045, aux.loss_seg: 0.2611, aux.acc_seg: 69.3689, loss: 0.8810
+2020-09-23 06:55:10,163 - mmseg - INFO - Iter [4450/10000]	lr: 1.182e-02, eta: 2:27:40, time: 1.534, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6242, decode.acc_seg: 75.6368, aux.loss_seg: 0.2628, aux.acc_seg: 68.9376, loss: 0.8870
+2020-09-23 06:56:28,640 - mmseg - INFO - Iter [4500/10000]	lr: 1.172e-02, eta: 2:26:19, time: 1.573, data_time: 0.016, memory: 29522, decode.loss_seg: 0.6221, decode.acc_seg: 75.4738, aux.loss_seg: 0.2615, aux.acc_seg: 69.2238, loss: 0.8836
+2020-09-23 06:57:43,948 - mmseg - INFO - Iter [4550/10000]	lr: 1.163e-02, eta: 2:24:53, time: 1.507, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6226, decode.acc_seg: 75.9350, aux.loss_seg: 0.2620, aux.acc_seg: 69.7802, loss: 0.8846
+2020-09-23 06:59:01,649 - mmseg - INFO - Iter [4600/10000]	lr: 1.153e-02, eta: 2:23:31, time: 1.553, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6246, decode.acc_seg: 74.5055, aux.loss_seg: 0.2615, aux.acc_seg: 69.2564, loss: 0.8861
+2020-09-23 07:00:41,343 - mmseg - INFO - Iter [4650/10000]	lr: 1.144e-02, eta: 2:22:34, time: 1.994, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6279, decode.acc_seg: 74.6645, aux.loss_seg: 0.2629, aux.acc_seg: 69.1166, loss: 0.8908
+2020-09-23 07:02:01,186 - mmseg - INFO - Iter [4700/10000]	lr: 1.134e-02, eta: 2:21:14, time: 1.597, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6216, decode.acc_seg: 75.8428, aux.loss_seg: 0.2609, aux.acc_seg: 70.2203, loss: 0.8825
+2020-09-23 07:03:19,483 - mmseg - INFO - Iter [4750/10000]	lr: 1.124e-02, eta: 2:19:53, time: 1.566, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6170, decode.acc_seg: 75.9146, aux.loss_seg: 0.2598, aux.acc_seg: 70.1893, loss: 0.8768
+2020-09-23 07:04:36,606 - mmseg - INFO - Iter [4800/10000]	lr: 1.115e-02, eta: 2:18:30, time: 1.542, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6196, decode.acc_seg: 74.6698, aux.loss_seg: 0.2604, aux.acc_seg: 69.1910, loss: 0.8800
+2020-09-23 07:05:52,348 - mmseg - INFO - Iter [4850/10000]	lr: 1.105e-02, eta: 2:17:05, time: 1.515, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6277, decode.acc_seg: 74.7700, aux.loss_seg: 0.2635, aux.acc_seg: 69.1121, loss: 0.8912
+2020-09-23 07:07:07,841 - mmseg - INFO - Iter [4900/10000]	lr: 1.096e-02, eta: 2:15:41, time: 1.510, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6218, decode.acc_seg: 75.7239, aux.loss_seg: 0.2609, aux.acc_seg: 70.3240, loss: 0.8827
+2020-09-23 07:08:26,828 - mmseg - INFO - Iter [4950/10000]	lr: 1.086e-02, eta: 2:14:20, time: 1.579, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6320, decode.acc_seg: 74.5134, aux.loss_seg: 0.2655, aux.acc_seg: 68.6655, loss: 0.8975
+2020-09-23 07:10:12,421 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 07:10:12,439 - mmseg - INFO - Iter [5000/10000]	lr: 1.077e-02, eta: 2:13:26, time: 2.113, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6205, decode.acc_seg: 76.1424, aux.loss_seg: 0.2618, aux.acc_seg: 69.9611, loss: 0.8823
+2020-09-23 07:11:27,436 - mmseg - INFO - Iter [5050/10000]	lr: 1.067e-02, eta: 2:12:01, time: 1.499, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6207, decode.acc_seg: 75.8379, aux.loss_seg: 0.2609, aux.acc_seg: 69.2916, loss: 0.8816
+2020-09-23 07:12:44,162 - mmseg - INFO - Iter [5100/10000]	lr: 1.057e-02, eta: 2:10:38, time: 1.535, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6246, decode.acc_seg: 74.5284, aux.loss_seg: 0.2618, aux.acc_seg: 69.3460, loss: 0.8863
+2020-09-23 07:14:00,462 - mmseg - INFO - Iter [5150/10000]	lr: 1.048e-02, eta: 2:09:15, time: 1.526, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6297, decode.acc_seg: 75.1131, aux.loss_seg: 0.2647, aux.acc_seg: 69.4601, loss: 0.8943
+2020-09-23 07:15:17,788 - mmseg - INFO - Iter [5200/10000]	lr: 1.038e-02, eta: 2:07:52, time: 1.546, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6248, decode.acc_seg: 75.6306, aux.loss_seg: 0.2629, aux.acc_seg: 70.1384, loss: 0.8877
+2020-09-23 07:16:34,179 - mmseg - INFO - Iter [5250/10000]	lr: 1.028e-02, eta: 2:06:29, time: 1.528, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6279, decode.acc_seg: 75.6527, aux.loss_seg: 0.2623, aux.acc_seg: 70.1855, loss: 0.8903
+2020-09-23 07:18:14,016 - mmseg - INFO - Iter [5300/10000]	lr: 1.019e-02, eta: 2:05:27, time: 1.998, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6173, decode.acc_seg: 76.7060, aux.loss_seg: 0.2593, aux.acc_seg: 70.8805, loss: 0.8766
+2020-09-23 07:19:30,042 - mmseg - INFO - Iter [5350/10000]	lr: 1.009e-02, eta: 2:04:03, time: 1.519, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6279, decode.acc_seg: 77.1878, aux.loss_seg: 0.2639, aux.acc_seg: 70.7240, loss: 0.8917
+2020-09-23 07:20:47,558 - mmseg - INFO - Iter [5400/10000]	lr: 9.995e-03, eta: 2:02:41, time: 1.550, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6115, decode.acc_seg: 75.9483, aux.loss_seg: 0.2574, aux.acc_seg: 70.3501, loss: 0.8688
+2020-09-23 07:22:04,251 - mmseg - INFO - Iter [5450/10000]	lr: 9.898e-03, eta: 2:01:18, time: 1.535, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6175, decode.acc_seg: 75.9085, aux.loss_seg: 0.2598, aux.acc_seg: 69.9024, loss: 0.8773
+2020-09-23 07:23:19,164 - mmseg - INFO - Iter [5500/10000]	lr: 9.801e-03, eta: 1:59:54, time: 1.498, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6236, decode.acc_seg: 75.7240, aux.loss_seg: 0.2622, aux.acc_seg: 69.8074, loss: 0.8858
+2020-09-23 07:24:33,472 - mmseg - INFO - Iter [5550/10000]	lr: 9.704e-03, eta: 1:58:30, time: 1.486, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6243, decode.acc_seg: 76.1799, aux.loss_seg: 0.2623, aux.acc_seg: 70.4228, loss: 0.8866
+2020-09-23 07:25:49,878 - mmseg - INFO - Iter [5600/10000]	lr: 9.607e-03, eta: 1:57:07, time: 1.528, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6182, decode.acc_seg: 75.6296, aux.loss_seg: 0.2602, aux.acc_seg: 69.8340, loss: 0.8784
+2020-09-23 07:27:35,604 - mmseg - INFO - Iter [5650/10000]	lr: 9.510e-03, eta: 1:56:07, time: 2.115, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6158, decode.acc_seg: 75.8979, aux.loss_seg: 0.2590, aux.acc_seg: 70.0894, loss: 0.8748
+2020-09-23 07:28:53,351 - mmseg - INFO - Iter [5700/10000]	lr: 9.412e-03, eta: 1:54:45, time: 1.553, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6163, decode.acc_seg: 76.1937, aux.loss_seg: 0.2594, aux.acc_seg: 70.2344, loss: 0.8757
+2020-09-23 07:30:11,904 - mmseg - INFO - Iter [5750/10000]	lr: 9.315e-03, eta: 1:53:24, time: 1.573, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6139, decode.acc_seg: 76.7678, aux.loss_seg: 0.2588, aux.acc_seg: 70.7632, loss: 0.8727
+2020-09-23 07:31:26,549 - mmseg - INFO - Iter [5800/10000]	lr: 9.217e-03, eta: 1:52:00, time: 1.492, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6256, decode.acc_seg: 76.0421, aux.loss_seg: 0.2629, aux.acc_seg: 69.9960, loss: 0.8885
+2020-09-23 07:32:40,568 - mmseg - INFO - Iter [5850/10000]	lr: 9.120e-03, eta: 1:50:36, time: 1.481, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6165, decode.acc_seg: 75.9996, aux.loss_seg: 0.2586, aux.acc_seg: 70.4536, loss: 0.8751
+2020-09-23 07:33:55,794 - mmseg - INFO - Iter [5900/10000]	lr: 9.022e-03, eta: 1:49:13, time: 1.504, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6230, decode.acc_seg: 77.0938, aux.loss_seg: 0.2620, aux.acc_seg: 70.7078, loss: 0.8850
+2020-09-23 07:35:36,869 - mmseg - INFO - Iter [5950/10000]	lr: 8.924e-03, eta: 1:48:07, time: 2.022, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6106, decode.acc_seg: 74.8126, aux.loss_seg: 0.2571, aux.acc_seg: 68.7222, loss: 0.8677
+2020-09-23 07:36:53,931 - mmseg - INFO - Saving checkpoint at 6000 iterations
+2020-09-23 07:36:54,973 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 07:36:54,973 - mmseg - INFO - Iter [6000/10000]	lr: 8.826e-03, eta: 1:46:46, time: 1.562, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6197, decode.acc_seg: 77.0286, aux.loss_seg: 0.2611, aux.acc_seg: 70.6523, loss: 0.8808
+2020-09-23 07:38:12,934 - mmseg - INFO - Iter [6050/10000]	lr: 8.728e-03, eta: 1:45:24, time: 1.558, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6254, decode.acc_seg: 75.9178, aux.loss_seg: 0.2624, aux.acc_seg: 69.7329, loss: 0.8878
+2020-09-23 07:39:29,025 - mmseg - INFO - Iter [6100/10000]	lr: 8.629e-03, eta: 1:44:02, time: 1.522, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6208, decode.acc_seg: 76.8503, aux.loss_seg: 0.2611, aux.acc_seg: 70.8940, loss: 0.8818
+2020-09-23 07:40:47,063 - mmseg - INFO - Iter [6150/10000]	lr: 8.531e-03, eta: 1:42:40, time: 1.560, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6185, decode.acc_seg: 76.2049, aux.loss_seg: 0.2594, aux.acc_seg: 70.4378, loss: 0.8779
+2020-09-23 07:42:04,704 - mmseg - INFO - Iter [6200/10000]	lr: 8.432e-03, eta: 1:41:19, time: 1.551, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6124, decode.acc_seg: 76.9426, aux.loss_seg: 0.2575, aux.acc_seg: 71.0711, loss: 0.8699
+2020-09-23 07:43:21,925 - mmseg - INFO - Iter [6250/10000]	lr: 8.334e-03, eta: 1:39:57, time: 1.546, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6141, decode.acc_seg: 75.8597, aux.loss_seg: 0.2575, aux.acc_seg: 70.5650, loss: 0.8716
+2020-09-23 07:45:03,052 - mmseg - INFO - Iter [6300/10000]	lr: 8.235e-03, eta: 1:38:50, time: 2.023, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6123, decode.acc_seg: 76.5597, aux.loss_seg: 0.2576, aux.acc_seg: 70.6878, loss: 0.8699
+2020-09-23 07:46:18,463 - mmseg - INFO - Iter [6350/10000]	lr: 8.136e-03, eta: 1:37:27, time: 1.508, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6139, decode.acc_seg: 77.4829, aux.loss_seg: 0.2582, aux.acc_seg: 71.5382, loss: 0.8721
+2020-09-23 07:47:36,550 - mmseg - INFO - Iter [6400/10000]	lr: 8.037e-03, eta: 1:36:06, time: 1.561, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6199, decode.acc_seg: 76.6968, aux.loss_seg: 0.2604, aux.acc_seg: 70.6244, loss: 0.8803
+2020-09-23 07:48:54,054 - mmseg - INFO - Iter [6450/10000]	lr: 7.937e-03, eta: 1:34:44, time: 1.550, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6263, decode.acc_seg: 77.2168, aux.loss_seg: 0.2630, aux.acc_seg: 71.1314, loss: 0.8893
+2020-09-23 07:50:11,624 - mmseg - INFO - Iter [6500/10000]	lr: 7.838e-03, eta: 1:33:23, time: 1.551, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6214, decode.acc_seg: 77.5902, aux.loss_seg: 0.2610, aux.acc_seg: 71.5995, loss: 0.8824
+2020-09-23 07:51:28,795 - mmseg - INFO - Iter [6550/10000]	lr: 7.738e-03, eta: 1:32:01, time: 1.543, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6183, decode.acc_seg: 76.9364, aux.loss_seg: 0.2599, aux.acc_seg: 71.1330, loss: 0.8782
+2020-09-23 07:52:44,763 - mmseg - INFO - Iter [6600/10000]	lr: 7.639e-03, eta: 1:30:39, time: 1.519, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6279, decode.acc_seg: 76.6438, aux.loss_seg: 0.2626, aux.acc_seg: 70.6141, loss: 0.8905
+2020-09-23 07:54:24,142 - mmseg - INFO - Iter [6650/10000]	lr: 7.539e-03, eta: 1:29:29, time: 1.987, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6191, decode.acc_seg: 77.8312, aux.loss_seg: 0.2595, aux.acc_seg: 71.9789, loss: 0.8786
+2020-09-23 07:55:38,933 - mmseg - INFO - Iter [6700/10000]	lr: 7.439e-03, eta: 1:28:06, time: 1.496, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6137, decode.acc_seg: 77.3836, aux.loss_seg: 0.2581, aux.acc_seg: 71.3050, loss: 0.8718
+2020-09-23 07:56:57,215 - mmseg - INFO - Iter [6750/10000]	lr: 7.339e-03, eta: 1:26:45, time: 1.566, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6166, decode.acc_seg: 78.1550, aux.loss_seg: 0.2593, aux.acc_seg: 71.8552, loss: 0.8760
+2020-09-23 07:58:13,392 - mmseg - INFO - Iter [6800/10000]	lr: 7.239e-03, eta: 1:25:23, time: 1.524, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6141, decode.acc_seg: 78.3424, aux.loss_seg: 0.2578, aux.acc_seg: 72.1599, loss: 0.8719
+2020-09-23 07:59:32,534 - mmseg - INFO - Iter [6850/10000]	lr: 7.138e-03, eta: 1:24:03, time: 1.582, data_time: 0.016, memory: 29522, decode.loss_seg: 0.6081, decode.acc_seg: 77.6352, aux.loss_seg: 0.2563, aux.acc_seg: 70.6662, loss: 0.8644
+2020-09-23 08:00:52,037 - mmseg - INFO - Iter [6900/10000]	lr: 7.038e-03, eta: 1:22:42, time: 1.590, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6177, decode.acc_seg: 77.5356, aux.loss_seg: 0.2590, aux.acc_seg: 71.8565, loss: 0.8767
+2020-09-23 08:02:32,215 - mmseg - INFO - Iter [6950/10000]	lr: 6.937e-03, eta: 1:21:31, time: 2.001, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6199, decode.acc_seg: 76.9233, aux.loss_seg: 0.2598, aux.acc_seg: 71.0259, loss: 0.8797
+2020-09-23 08:03:48,686 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 08:03:48,739 - mmseg - INFO - Iter [7000/10000]	lr: 6.836e-03, eta: 1:20:09, time: 1.532, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6026, decode.acc_seg: 77.7522, aux.loss_seg: 0.2540, aux.acc_seg: 71.3423, loss: 0.8566
+2020-09-23 08:05:02,883 - mmseg - INFO - Iter [7050/10000]	lr: 6.735e-03, eta: 1:18:47, time: 1.483, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6177, decode.acc_seg: 77.4569, aux.loss_seg: 0.2585, aux.acc_seg: 71.7611, loss: 0.8762
+2020-09-23 08:06:18,656 - mmseg - INFO - Iter [7100/10000]	lr: 6.634e-03, eta: 1:17:25, time: 1.515, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6208, decode.acc_seg: 77.6157, aux.loss_seg: 0.2600, aux.acc_seg: 71.8254, loss: 0.8808
+2020-09-23 08:07:33,401 - mmseg - INFO - Iter [7150/10000]	lr: 6.532e-03, eta: 1:16:03, time: 1.495, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6128, decode.acc_seg: 77.9977, aux.loss_seg: 0.2577, aux.acc_seg: 72.0439, loss: 0.8705
+2020-09-23 08:08:48,841 - mmseg - INFO - Iter [7200/10000]	lr: 6.430e-03, eta: 1:14:41, time: 1.509, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6110, decode.acc_seg: 78.0304, aux.loss_seg: 0.2569, aux.acc_seg: 72.1426, loss: 0.8680
+2020-09-23 08:10:03,408 - mmseg - INFO - Iter [7250/10000]	lr: 6.329e-03, eta: 1:13:19, time: 1.491, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6123, decode.acc_seg: 77.8761, aux.loss_seg: 0.2571, aux.acc_seg: 71.5275, loss: 0.8694
+2020-09-23 08:11:41,340 - mmseg - INFO - Iter [7300/10000]	lr: 6.227e-03, eta: 1:12:05, time: 1.959, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6217, decode.acc_seg: 78.3373, aux.loss_seg: 0.2604, aux.acc_seg: 72.0489, loss: 0.8821
+2020-09-23 08:12:56,879 - mmseg - INFO - Iter [7350/10000]	lr: 6.125e-03, eta: 1:10:43, time: 1.511, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6122, decode.acc_seg: 78.2460, aux.loss_seg: 0.2565, aux.acc_seg: 72.3790, loss: 0.8687
+2020-09-23 08:14:10,730 - mmseg - INFO - Iter [7400/10000]	lr: 6.022e-03, eta: 1:09:21, time: 1.477, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6145, decode.acc_seg: 77.8235, aux.loss_seg: 0.2575, aux.acc_seg: 71.7677, loss: 0.8720
+2020-09-23 08:15:26,473 - mmseg - INFO - Iter [7450/10000]	lr: 5.920e-03, eta: 1:08:00, time: 1.515, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6160, decode.acc_seg: 78.0710, aux.loss_seg: 0.2586, aux.acc_seg: 71.6625, loss: 0.8746
+2020-09-23 08:16:41,462 - mmseg - INFO - Iter [7500/10000]	lr: 5.817e-03, eta: 1:06:38, time: 1.500, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6129, decode.acc_seg: 78.2525, aux.loss_seg: 0.2572, aux.acc_seg: 71.9332, loss: 0.8701
+2020-09-23 08:17:56,680 - mmseg - INFO - Iter [7550/10000]	lr: 5.714e-03, eta: 1:05:17, time: 1.504, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6139, decode.acc_seg: 78.4912, aux.loss_seg: 0.2577, aux.acc_seg: 72.1189, loss: 0.8716
+2020-09-23 08:19:36,112 - mmseg - INFO - Iter [7600/10000]	lr: 5.611e-03, eta: 1:04:03, time: 1.990, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6130, decode.acc_seg: 77.8625, aux.loss_seg: 0.2573, aux.acc_seg: 71.5368, loss: 0.8703
+2020-09-23 08:20:54,394 - mmseg - INFO - Iter [7650/10000]	lr: 5.507e-03, eta: 1:02:42, time: 1.565, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6147, decode.acc_seg: 78.7235, aux.loss_seg: 0.2580, aux.acc_seg: 72.5798, loss: 0.8727
+2020-09-23 08:22:10,826 - mmseg - INFO - Iter [7700/10000]	lr: 5.404e-03, eta: 1:01:21, time: 1.528, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6132, decode.acc_seg: 78.8483, aux.loss_seg: 0.2579, aux.acc_seg: 72.0460, loss: 0.8712
+2020-09-23 08:23:24,625 - mmseg - INFO - Iter [7750/10000]	lr: 5.300e-03, eta: 0:59:59, time: 1.476, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6172, decode.acc_seg: 78.4879, aux.loss_seg: 0.2591, aux.acc_seg: 72.3626, loss: 0.8763
+2020-09-23 08:24:41,593 - mmseg - INFO - Iter [7800/10000]	lr: 5.196e-03, eta: 0:58:38, time: 1.539, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6146, decode.acc_seg: 77.9203, aux.loss_seg: 0.2579, aux.acc_seg: 71.6204, loss: 0.8725
+2020-09-23 08:25:57,412 - mmseg - INFO - Iter [7850/10000]	lr: 5.091e-03, eta: 0:57:17, time: 1.516, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6193, decode.acc_seg: 78.6347, aux.loss_seg: 0.2595, aux.acc_seg: 72.2785, loss: 0.8789
+2020-09-23 08:27:13,196 - mmseg - INFO - Iter [7900/10000]	lr: 4.987e-03, eta: 0:55:56, time: 1.515, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6101, decode.acc_seg: 78.1589, aux.loss_seg: 0.2561, aux.acc_seg: 72.1188, loss: 0.8662
+2020-09-23 08:28:53,175 - mmseg - INFO - Iter [7950/10000]	lr: 4.882e-03, eta: 0:54:41, time: 2.000, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6143, decode.acc_seg: 78.4713, aux.loss_seg: 0.2576, aux.acc_seg: 72.1109, loss: 0.8719
+2020-09-23 08:30:09,723 - mmseg - INFO - Saving checkpoint at 8000 iterations
+2020-09-23 08:30:10,429 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 08:30:10,430 - mmseg - INFO - Iter [8000/10000]	lr: 4.777e-03, eta: 0:53:21, time: 1.545, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6098, decode.acc_seg: 78.6196, aux.loss_seg: 0.2557, aux.acc_seg: 72.1489, loss: 0.8655
+2020-09-23 08:31:25,531 - mmseg - INFO - Iter [8050/10000]	lr: 4.672e-03, eta: 0:51:59, time: 1.501, data_time: 0.009, memory: 29522, decode.loss_seg: 0.6153, decode.acc_seg: 78.9277, aux.loss_seg: 0.2578, aux.acc_seg: 72.6821, loss: 0.8732
+2020-09-23 08:32:40,607 - mmseg - INFO - Iter [8100/10000]	lr: 4.566e-03, eta: 0:50:38, time: 1.502, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6081, decode.acc_seg: 78.7013, aux.loss_seg: 0.2551, aux.acc_seg: 72.6151, loss: 0.8632
+2020-09-23 08:33:55,431 - mmseg - INFO - Iter [8150/10000]	lr: 4.460e-03, eta: 0:49:17, time: 1.496, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6148, decode.acc_seg: 79.2001, aux.loss_seg: 0.2576, aux.acc_seg: 72.7074, loss: 0.8724
+2020-09-23 08:35:11,105 - mmseg - INFO - Iter [8200/10000]	lr: 4.354e-03, eta: 0:47:56, time: 1.513, data_time: 0.019, memory: 29522, decode.loss_seg: 0.6151, decode.acc_seg: 79.1748, aux.loss_seg: 0.2571, aux.acc_seg: 72.8138, loss: 0.8723
+2020-09-23 08:36:26,795 - mmseg - INFO - Iter [8250/10000]	lr: 4.248e-03, eta: 0:46:35, time: 1.514, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6116, decode.acc_seg: 78.5208, aux.loss_seg: 0.2565, aux.acc_seg: 72.4337, loss: 0.8681
+2020-09-23 08:38:06,719 - mmseg - INFO - Iter [8300/10000]	lr: 4.141e-03, eta: 0:45:20, time: 1.998, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6223, decode.acc_seg: 78.9016, aux.loss_seg: 0.2600, aux.acc_seg: 73.0107, loss: 0.8823
+2020-09-23 08:39:24,629 - mmseg - INFO - Iter [8350/10000]	lr: 4.034e-03, eta: 0:43:59, time: 1.558, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6123, decode.acc_seg: 79.7745, aux.loss_seg: 0.2572, aux.acc_seg: 73.3160, loss: 0.8695
+2020-09-23 08:40:38,789 - mmseg - INFO - Iter [8400/10000]	lr: 3.927e-03, eta: 0:42:38, time: 1.483, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6128, decode.acc_seg: 79.4948, aux.loss_seg: 0.2572, aux.acc_seg: 72.9465, loss: 0.8699
+2020-09-23 08:41:58,445 - mmseg - INFO - Iter [8450/10000]	lr: 3.819e-03, eta: 0:41:18, time: 1.593, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6065, decode.acc_seg: 79.1763, aux.loss_seg: 0.2545, aux.acc_seg: 72.8806, loss: 0.8609
+2020-09-23 08:43:16,711 - mmseg - INFO - Iter [8500/10000]	lr: 3.711e-03, eta: 0:39:58, time: 1.566, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6152, decode.acc_seg: 79.9855, aux.loss_seg: 0.2575, aux.acc_seg: 73.1062, loss: 0.8727
+2020-09-23 08:44:37,125 - mmseg - INFO - Iter [8550/10000]	lr: 3.602e-03, eta: 0:38:38, time: 1.608, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6149, decode.acc_seg: 79.5843, aux.loss_seg: 0.2579, aux.acc_seg: 73.3306, loss: 0.8728
+2020-09-23 08:46:23,130 - mmseg - INFO - Iter [8600/10000]	lr: 3.493e-03, eta: 0:37:22, time: 2.120, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6146, decode.acc_seg: 78.2042, aux.loss_seg: 0.2569, aux.acc_seg: 72.3188, loss: 0.8716
+2020-09-23 08:47:40,633 - mmseg - INFO - Iter [8650/10000]	lr: 3.384e-03, eta: 0:36:02, time: 1.548, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6057, decode.acc_seg: 79.4433, aux.loss_seg: 0.2537, aux.acc_seg: 72.8458, loss: 0.8595
+2020-09-23 08:48:55,967 - mmseg - INFO - Iter [8700/10000]	lr: 3.275e-03, eta: 0:34:41, time: 1.509, data_time: 0.014, memory: 29522, decode.loss_seg: 0.6108, decode.acc_seg: 79.4413, aux.loss_seg: 0.2561, aux.acc_seg: 73.3409, loss: 0.8669
+2020-09-23 08:50:13,065 - mmseg - INFO - Iter [8750/10000]	lr: 3.165e-03, eta: 0:33:21, time: 1.542, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6146, decode.acc_seg: 79.7764, aux.loss_seg: 0.2579, aux.acc_seg: 73.1390, loss: 0.8725
+2020-09-23 08:51:29,880 - mmseg - INFO - Iter [8800/10000]	lr: 3.054e-03, eta: 0:32:00, time: 1.537, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6090, decode.acc_seg: 79.2329, aux.loss_seg: 0.2552, aux.acc_seg: 73.0763, loss: 0.8641
+2020-09-23 08:52:48,756 - mmseg - INFO - Iter [8850/10000]	lr: 2.943e-03, eta: 0:30:40, time: 1.577, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6090, decode.acc_seg: 79.6223, aux.loss_seg: 0.2558, aux.acc_seg: 73.0828, loss: 0.8648
+2020-09-23 08:54:07,160 - mmseg - INFO - Iter [8900/10000]	lr: 2.832e-03, eta: 0:29:20, time: 1.568, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6111, decode.acc_seg: 79.6113, aux.loss_seg: 0.2565, aux.acc_seg: 72.8079, loss: 0.8677
+2020-09-23 08:55:45,597 - mmseg - INFO - Iter [8950/10000]	lr: 2.720e-03, eta: 0:28:02, time: 1.969, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6093, decode.acc_seg: 78.6571, aux.loss_seg: 0.2553, aux.acc_seg: 72.5291, loss: 0.8646
+2020-09-23 08:57:03,685 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 08:57:03,703 - mmseg - INFO - Iter [9000/10000]	lr: 2.608e-03, eta: 0:26:41, time: 1.562, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6158, decode.acc_seg: 79.9151, aux.loss_seg: 0.2576, aux.acc_seg: 73.3914, loss: 0.8735
+2020-09-23 08:58:16,966 - mmseg - INFO - Iter [9050/10000]	lr: 2.495e-03, eta: 0:25:21, time: 1.465, data_time: 0.010, memory: 29522, decode.loss_seg: 0.6139, decode.acc_seg: 79.5544, aux.loss_seg: 0.2571, aux.acc_seg: 73.1620, loss: 0.8710
+2020-09-23 08:59:32,808 - mmseg - INFO - Iter [9100/10000]	lr: 2.381e-03, eta: 0:24:00, time: 1.517, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6111, decode.acc_seg: 79.8391, aux.loss_seg: 0.2563, aux.acc_seg: 73.4424, loss: 0.8674
+2020-09-23 09:00:51,794 - mmseg - INFO - Iter [9150/10000]	lr: 2.267e-03, eta: 0:22:40, time: 1.575, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6123, decode.acc_seg: 79.1141, aux.loss_seg: 0.2562, aux.acc_seg: 73.1283, loss: 0.8685
+2020-09-23 09:02:08,126 - mmseg - INFO - Iter [9200/10000]	lr: 2.152e-03, eta: 0:21:20, time: 1.531, data_time: 0.017, memory: 29522, decode.loss_seg: 0.6134, decode.acc_seg: 79.4279, aux.loss_seg: 0.2575, aux.acc_seg: 73.0306, loss: 0.8709
+2020-09-23 09:03:52,645 - mmseg - INFO - Iter [9250/10000]	lr: 2.036e-03, eta: 0:20:02, time: 2.086, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6067, decode.acc_seg: 79.6715, aux.loss_seg: 0.2544, aux.acc_seg: 73.2253, loss: 0.8611
+2020-09-23 09:05:07,362 - mmseg - INFO - Iter [9300/10000]	lr: 1.920e-03, eta: 0:18:41, time: 1.499, data_time: 0.016, memory: 29522, decode.loss_seg: 0.6054, decode.acc_seg: 79.7488, aux.loss_seg: 0.2535, aux.acc_seg: 73.5333, loss: 0.8589
+2020-09-23 09:06:22,608 - mmseg - INFO - Iter [9350/10000]	lr: 1.802e-03, eta: 0:17:21, time: 1.499, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6130, decode.acc_seg: 80.8044, aux.loss_seg: 0.2567, aux.acc_seg: 74.3320, loss: 0.8697
+2020-09-23 09:07:38,822 - mmseg - INFO - Iter [9400/10000]	lr: 1.684e-03, eta: 0:16:00, time: 1.530, data_time: 0.018, memory: 29522, decode.loss_seg: 0.6083, decode.acc_seg: 80.4012, aux.loss_seg: 0.2554, aux.acc_seg: 73.5971, loss: 0.8637
+2020-09-23 09:08:54,601 - mmseg - INFO - Iter [9450/10000]	lr: 1.565e-03, eta: 0:14:40, time: 1.514, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6070, decode.acc_seg: 80.0125, aux.loss_seg: 0.2549, aux.acc_seg: 73.4511, loss: 0.8619
+2020-09-23 09:10:09,235 - mmseg - INFO - Iter [9500/10000]	lr: 1.445e-03, eta: 0:13:20, time: 1.494, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6108, decode.acc_seg: 80.1125, aux.loss_seg: 0.2565, aux.acc_seg: 73.4915, loss: 0.8673
+2020-09-23 09:11:25,442 - mmseg - INFO - Iter [9550/10000]	lr: 1.324e-03, eta: 0:11:59, time: 1.524, data_time: 0.013, memory: 29522, decode.loss_seg: 0.6109, decode.acc_seg: 80.6620, aux.loss_seg: 0.2558, aux.acc_seg: 74.1359, loss: 0.8667
+2020-09-23 09:13:07,600 - mmseg - INFO - Iter [9600/10000]	lr: 1.201e-03, eta: 0:10:40, time: 2.043, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6036, decode.acc_seg: 79.6201, aux.loss_seg: 0.2527, aux.acc_seg: 73.5946, loss: 0.8562
+2020-09-23 09:14:24,813 - mmseg - INFO - Iter [9650/10000]	lr: 1.076e-03, eta: 0:09:20, time: 1.544, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6087, decode.acc_seg: 80.1874, aux.loss_seg: 0.2555, aux.acc_seg: 73.2889, loss: 0.8642
+2020-09-23 09:15:41,078 - mmseg - INFO - Iter [9700/10000]	lr: 9.503e-04, eta: 0:08:00, time: 1.525, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6047, decode.acc_seg: 79.9599, aux.loss_seg: 0.2535, aux.acc_seg: 73.5664, loss: 0.8582
+2020-09-23 09:16:57,203 - mmseg - INFO - Iter [9750/10000]	lr: 8.220e-04, eta: 0:06:40, time: 1.523, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6063, decode.acc_seg: 80.5073, aux.loss_seg: 0.2547, aux.acc_seg: 73.4865, loss: 0.8610
+2020-09-23 09:18:14,394 - mmseg - INFO - Iter [9800/10000]	lr: 6.912e-04, eta: 0:05:20, time: 1.538, data_time: 0.011, memory: 29522, decode.loss_seg: 0.6188, decode.acc_seg: 79.9481, aux.loss_seg: 0.2591, aux.acc_seg: 73.5673, loss: 0.8779
+2020-09-23 09:19:31,407 - mmseg - INFO - Iter [9850/10000]	lr: 5.570e-04, eta: 0:04:00, time: 1.545, data_time: 0.020, memory: 29522, decode.loss_seg: 0.6073, decode.acc_seg: 80.1603, aux.loss_seg: 0.2542, aux.acc_seg: 73.6129, loss: 0.8615
+2020-09-23 09:20:47,516 - mmseg - INFO - Iter [9900/10000]	lr: 4.182e-04, eta: 0:02:40, time: 1.520, data_time: 0.012, memory: 29522, decode.loss_seg: 0.6093, decode.acc_seg: 80.2887, aux.loss_seg: 0.2547, aux.acc_seg: 73.7673, loss: 0.8640
+2020-09-23 09:22:29,307 - mmseg - INFO - Iter [9950/10000]	lr: 2.721e-04, eta: 0:01:20, time: 2.039, data_time: 0.016, memory: 29522, decode.loss_seg: 0.6106, decode.acc_seg: 79.6284, aux.loss_seg: 0.2561, aux.acc_seg: 72.5321, loss: 0.8667
+2020-09-23 09:23:44,462 - mmseg - INFO - Saving checkpoint at 10000 iterations
+2020-09-23 09:25:56,286 - mmseg - INFO - per class results:
+Class                  IoU        Acc
+background           91.17      92.10
+aeroplane            80.31      99.10
+bicycle              36.20      98.28
+bird                 79.66      98.93
+boat                 55.05      91.80
+bottle               71.54      97.01
+bus                  91.20      98.86
+car                  82.32      97.47
+cat                  89.94      99.05
+chair                31.74      68.85
+cow                  89.67      97.09
+diningtable          64.12      76.18
+dog                  86.57      98.41
+horse                84.21      98.56
+motorbike            82.41      95.51
+person               84.02      95.03
+pottedplant          45.41      86.36
+sheep                84.49      96.17
+sofa                 53.47      78.23
+train                86.56      96.44
+tvmonitor            63.04      92.57
+Summary:
+Scope                 mAcc global_Acc       mIoU      FWIoU       BIoU        BF1
+global               92.95      92.58      73.00      87.70      74.11      40.24
+
+2020-09-23 09:25:56,341 - mmseg - INFO - Exp name: macc_bezier_10k_all.py
+2020-09-23 09:25:56,341 - mmseg - INFO - Iter(val) [10000]	mIoU: 0.7300, mAcc: 0.9295, aAcc: 0.9258, FWIoU: 0.8770, BIoU: 0.7411, BF1: 0.4024
