@@ -4,6 +4,8 @@ _base_ = [
     '../../configs/_base_/schedules/schedule_20k.py'
 ]
 
+dist_params = dict(backend='nccl', port=18869)
+
 optimizer = dict(
     type='SGD', lr=0.02,
     paramwise_cfg = dict(
@@ -31,7 +33,7 @@ model = dict(pretrained='open-mmlab://resnet101_v1c',
                      type='AutoSegLoss', 
                      target_metric='mIoU', 
                      num_class=21, 
-                     theta=[3.65390355e-04, 9.84171689e-01, 9.69491959e-01, 9.92340326e-01, 9.88328516e-01, 9.95552719e-01, 3.54609758e-01, 2.67221928e-01, 5.60551465e-01, 4.35290039e-01, 5.65432191e-01, 6.01448298e-01], 
+                     theta=[5.69728440e-04, 6.43720450e-01, 3.38589169e-01, 7.05543360e-01, 6.25281252e-01, 7.79551927e-01, 6.90375570e-01, 1.30628900e-02, 8.34170515e-01, 9.62431815e-01, 9.42998269e-01, 9.80038125e-01], 
                      parameterization='bezier', 
                      loss_weight=1.0)),
             auxiliary_head=dict(
@@ -41,6 +43,6 @@ model = dict(pretrained='open-mmlab://resnet101_v1c',
                      type='AutoSegLoss', 
                      target_metric='mIoU', 
                      num_class=21, 
-                     theta=[3.65390355e-04, 9.84171689e-01, 9.69491959e-01, 9.92340326e-01, 9.88328516e-01, 9.95552719e-01, 3.54609758e-01, 2.67221928e-01, 5.60551465e-01, 4.35290039e-01, 5.65432191e-01, 6.01448298e-01], 
+                     theta=[5.69728440e-04, 6.43720450e-01, 3.38589169e-01, 7.05543360e-01, 6.25281252e-01, 7.79551927e-01, 6.90375570e-01, 1.30628900e-02, 8.34170515e-01, 9.62431815e-01, 9.42998269e-01, 9.80038125e-01], 
                      parameterization='bezier', 
                      loss_weight=0.4)))
